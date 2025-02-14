@@ -19,10 +19,13 @@ const avsDeploymentData = JSON.parse(fs.readFileSync(path.resolve(__dirname, `..
 // Load core deployment data
 const coreDeploymentData = JSON.parse(fs.readFileSync(path.resolve(__dirname, `../contracts/deployments/core/${chainId}.json`), 'utf8'));
 
+
 const delegationManagerAddress = coreDeploymentData.addresses.delegation; // todo: reminder to fix the naming of this contract in the deployment file, change to delegationManager
 const avsDirectoryAddress = coreDeploymentData.addresses.avsDirectory;
 const helloWorldServiceManagerAddress = avsDeploymentData.addresses.helloWorldServiceManager;
 const ecdsaStakeRegistryAddress = avsDeploymentData.addresses.stakeRegistry;
+
+
 
 // Load ABIs
 const delegationManagerABI = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../abis/IDelegationManager.json'), 'utf8'));
@@ -36,7 +39,7 @@ const helloWorldServiceManager = new ethers.Contract(helloWorldServiceManagerAdd
 const ecdsaRegistryContract = new ethers.Contract(ecdsaStakeRegistryAddress, ecdsaRegistryABI, wallet);
 const avsDirectory = new ethers.Contract(avsDirectoryAddress, avsDirectoryABI, wallet);
 
-// Flow 1: On-Chain Payment with Verification
+
 const signAndRespondToTask = async (taskIndex: number, taskCreatedBlock: number, taskName: string) => {
     const message = `Hello, ${taskName}`;
     const messageHash = ethers.solidityPackedKeccak256(["string"], [message]);
@@ -61,35 +64,8 @@ const signAndRespondToTask = async (taskIndex: number, taskCreatedBlock: number,
     console.log(`Responded to task.`);
 };
 
-// Flow 2: Off-Chain Data Handling
-const handleOffChainData = async (data: string) => {
-    console.log(`Handling off-chain data: ${data}`);
-    // Perform off-chain processing here
-    // No on-chain write, so no gas fees
-};
-
-// Flow 3: Admin Withdrawal
-const handleAdminWithdrawal = async (amount: number) => {
-    console.log(`Admin withdrawal requested for amount: ${amount}`);
-    // Fetch quote from backend and complete transaction
-    const quote = "0x1234567890abcdef";
-    console.log(`Quote received: ${quote}`);
-    // Complete the transaction on-chain
-    const tx = await helloWorldServiceManager.completeWithdrawal(amount, quote);
-    await tx.wait();
-    console.log(`Withdrawal completed.`);
-};
-
-// Flow 4: Backend Data Response
-const handleBackendDataResponse = async (data: string) => {
-    console.log(`Backend data received: ${data}`);
-    // Return a string to the contract
-    const tx = await helloWorldServiceManager.submitDataResponse(data);
-    await tx.wait();
-    console.log(`Data response submitted.`);
-};
-
 const registerOperator = async () => {
+    
     // Registers as an Operator in EigenLayer.
     try {
         const tx1 = await delegationManager.registerAsOperator({
@@ -132,7 +108,9 @@ const registerOperator = async () => {
 
     console.log("Registering Operator to AVS Registry contract");
 
+    
     // Register Operator to AVS
+    // Per release here: https://github.com/Layr-Labs/eigenlayer-middleware/blob/v0.2.1-mainnet-rewards/src/unaudited/ECDSAStakeRegistry.sol#L49
     const tx2 = await ecdsaRegistryContract.registerOperatorWithSignature(
         operatorSignatureWithSaltAndExpiry,
         wallet.address
@@ -142,24 +120,15 @@ const registerOperator = async () => {
 };
 
 const monitorNewTasks = async () => {
+    //console.log(`Creating new task "EigenWorld"`);
+    //await helloWorldServiceManager.createNewTask("EigenWorld");
+
     helloWorldServiceManager.on("NewTaskCreated", async (taskIndex: number, task: any) => {
         console.log(`New task detected: Hello, ${task.name}`);
         await signAndRespondToTask(taskIndex, task.taskCreatedBlock, task.name);
     });
 
-    helloWorldServiceManager.on("OffChainDataEvent", async (data: string) => {
-        await handleOffChainData(data);
-    });
-
-    helloWorldServiceManager.on("WithdrawalRequested", async (admin: string, amount: number) => {
-        await handleAdminWithdrawal(amount);
-    });
-
-    helloWorldServiceManager.on("DataResponse", async (response: string) => {
-        await handleBackendDataResponse(response);
-    });
-
-    console.log("Monitoring for new tasks and events...");
+    console.log("Monitoring for new tasks...");
 };
 
 const main = async () => {

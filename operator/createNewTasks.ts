@@ -16,6 +16,7 @@ const helloWorldServiceManagerABI = JSON.parse(fs.readFileSync(path.resolve(__di
 // Initialize contract objects from ABIs
 const helloWorldServiceManager = new ethers.Contract(helloWorldServiceManagerAddress, helloWorldServiceManagerABI, wallet);
 
+
 // Function to generate random names
 function generateRandomName(): string {
     const adjectives = ['Quick', 'Lazy', 'Sleepy', 'Noisy', 'Hungry'];
@@ -24,74 +25,29 @@ function generateRandomName(): string {
     const noun = nouns[Math.floor(Math.random() * nouns.length)];
     const randomName = `${adjective}${noun}${Math.floor(Math.random() * 1000)}`;
     return randomName;
+  }
+
+async function createNewTask(taskName: string) {
+  try {
+    // Send a transaction to the createNewTask function
+    const tx = await helloWorldServiceManager.createNewTask(taskName);
+    
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+    
+    console.log(`Transaction successful with hash: ${receipt.hash}`);
+  } catch (error) {
+    console.error('Error sending transaction:', error);
+  }
 }
 
-// Flow 1: Create a new task with payment
-async function createPaymentTask(amount: number, userId: string, data: string) {
-    try {
-        const tx = await helloWorldServiceManager.createPaymentTask(amount, userId, data);
-        const receipt = await tx.wait();
-        console.log(`Payment task created with hash: ${receipt.hash}`);
-    } catch (error) {
-        console.error('Error creating payment task:', error);
-    }
-}
-
-// Flow 2: Trigger off-chain task
-async function triggerOffChainTask(data: string) {
-    try {
-        const tx = await helloWorldServiceManager.triggerOffChainTask(data);
-        const receipt = await tx.wait();
-        console.log(`Off-chain task triggered with hash: ${receipt.hash}`);
-    } catch (error) {
-        console.error('Error triggering off-chain task:', error);
-    }
-}
-
-// Flow 3: Admin withdrawal
-async function requestWithdrawal(amount: number) {
-    try {
-        const tx = await helloWorldServiceManager.requestWithdrawal(amount);
-        const receipt = await tx.wait();
-        console.log(`Withdrawal requested with hash: ${receipt.hash}`);
-    } catch (error) {
-        console.error('Error requesting withdrawal:', error);
-    }
-}
-
-// Flow 4: Send data to backend and get response
-async function sendDataToBackend(data: string) {
-    try {
-        const tx = await helloWorldServiceManager.sendDataToBackend(data);
-        const receipt = await tx.wait();
-        console.log(`Data sent to backend with hash: ${receipt.hash}`);
-    } catch (error) {
-        console.error('Error sending data to backend:', error);
-    }
-}
-
-// Function to create tasks at random intervals
+// Function to create a new task with a random name every 15 seconds
 function startCreatingTasks() {
-    setInterval(() => {
-        const randomName = generateRandomName();
-        const amount = Math.floor(Math.random() * 100);
-        const userId = `user${Math.floor(Math.random() * 1000)}`;
-        const data = `data${Math.floor(Math.random() * 1000)}`;
-
-        // Simulate Flow 1
-        createPaymentTask(amount, userId, data);
-
-        // Simulate Flow 2
-        triggerOffChainTask(data);
-
-        // Simulate Flow 3
-        if (Math.random() < 0.1) { // 10% chance to simulate admin withdrawal
-            requestWithdrawal(amount);
-        }
-
-        // Simulate Flow 4
-        sendDataToBackend(data);
-    }, 24000); // Create a new task every 24 seconds
+  setInterval(() => {
+    const randomName = generateRandomName();
+    console.log(`Creating new task with name: ${randomName}`);
+    createNewTask(randomName);
+  }, 24000);
 }
 
 // Start the process
